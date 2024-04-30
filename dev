@@ -1,0 +1,54 @@
+import subprocess, os, argparse, sys
+from time import sleep
+
+# Usable with conan version 1.53.0
+
+# Argsparser
+parser = argparse.ArgumentParser("devtest")
+parser.add_argument("dev", choices=["debug", "build", "run"])
+args = parser.parse_args()
+
+# Variables
+INSTALL_FOLDER = "project-settings"
+GENERATOR = "Visual Studio 17 2022" # For Linux insert \ in front of every space
+PROJECT_NAME = "name-here"
+PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
+PROJECT_PATH = "/".join(PROJECT_PATH.split("\\")) # Windows shenanigans
+TOOLCHAIN_PATH = "{}/{}/conan_toolchain.cmake".format(PROJECT_PATH, INSTALL_FOLDER)
+BUILD_TYPE = "Debug" if args.dev == "debug" else "Release" if args.dev == "build" else "Debug"
+
+# Only Windows will create Release folder inside out
+out_folder_output = "/out/{}".format(BUILD_TYPE) if sys.platform == "win32" else "/out"
+APP_FOLDER = "{}{}".format(PROJECT_PATH, out_folder_output)
+
+# Commands
+if sys.platform == "win32" :
+    init_args = ["conan", "install", ".", "--install-folder", INSTALL_FOLDER, "--build=missing", "--settings=build_type={}".format(BUILD_TYPE)]
+    toolchain_args = ["cmake", ".", "-G", GENERATOR, "-DCMAKE_TOOLCHAIN_FILE={}".format(TOOLCHAIN_PATH), "-B", "out"]
+    build_args = ["cmake", "--build", "./out", "--config", BUILD_TYPE]
+else :
+    init_args = "conan install . --install-folder {} --build=missing --settings=build_type={}".format(INSTALL_FOLDER, BUILD_TYPE)
+    toolchain_args = "cmake . -G {} -DCMAKE_TOOLCHAIN_FILE={} -B out".format(GENERATOR,TOOLCHAIN_PATH)
+    build_args = "cmake --build ./out --config {}".format(BUILD_TYPE)
+
+# Parse commands
+def parse_subprocess(cmd):
+    process_open = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
+    process_open.wait()
+    out = process_open.stdout.read()
+    print(out)
+
+def handle_commands(args):
+    if args.dev == "build" or args.dev == "debug":
+        if GENERATOR == "":
+            print("No generator given!")
+            return
+        print("Building...")
+        for cmd in [init_args, toolchain_args, build_args] :
+            parse_subprocess(cmd)
+            sleep(1)
+
+    elif args.dev == "run":
+        subprocess.run("{}/{}{}".format(APP_FOLDER, PROJECT_NAME, ".exe" if sys.platform == "win32"  else ""))
+
+handle_commands(args)
