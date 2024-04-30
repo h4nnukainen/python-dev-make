@@ -10,7 +10,7 @@ args = parser.parse_args()
 
 # Variables
 INSTALL_FOLDER = "project-settings"
-GENERATOR = "Visual Studio 17 2022" # For Linux insert \ in front of every space
+GENERATOR = "Visual Studio 17 2022" # Probably needs another equivalent if you're not using Visual Studio. For Linux insert \ in front of every space.
 PROJECT_NAME = "name-here"
 PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
 PROJECT_PATH = "/".join(PROJECT_PATH.split("\\")) # Windows shenanigans
